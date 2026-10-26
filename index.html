@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="JARVIS"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><link rel="apple-touch-icon" href="apple-touch-icon.png"><link rel="icon" href="icon-192.png">
+<link rel="manifest" href="manifest.webmanifest"><title>JARVIS</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#000;color:#fff4d6;font-family:-apple-system,system-ui,sans-serif;min-height:100vh}
+main{max-width:600px;margin:auto;padding:35px 20px;text-align:center}
+h1{letter-spacing:.3em;font-weight:300;color:#f5c451;text-shadow:0 0 22px #f5a623}
+.orb{height:175px;width:175px;border-radius:50%;border:3px solid #e8b84a;box-shadow:0 0 35px #ffb703,inset 0 0 45px #ff8f1f;margin:35px auto;display:grid;place-items:center;font-size:44px;background:radial-gradient(circle,#a67c1b,#2a1d05 55%,#0a0702)}
+.orb.active{animation:pulse 1.3s infinite alternate}
+@keyframes pulse{to{box-shadow:0 0 75px #ffd978,inset 0 0 65px #ffe6a3}}
+.card{background:#0c0903f2;border:1px solid #f5c45155;border-radius:18px;padding:17px;margin:14px 0}
+button,input,select{font:inherit;border-radius:12px;padding:13px;border:1px solid #d4a53a66}
+button{background:linear-gradient(100deg,#b8860b,#f5c451);color:#1a1200;font-weight:600;cursor:pointer}
+input,select{background:#070502;color:#fff4d6;min-width:0;flex:1;width:100%}
+form{display:flex;gap:7px}
+.links{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+.links a{color:#fff4d6;text-decoration:none;border:1px solid #d4a53a66;padding:12px 5px;border-radius:12px;background:#15100a;font-size:13px}
+.small{color:#b8a77a;font-size:13px;line-height:1.5}
+#log{min-height:80px;white-space:pre-wrap;text-align:left}
+#callbtn{width:100%;font-size:18px;padding:16px;background:linear-gradient(100deg,#d4a017,#ffd978)}
+label{display:block;text-align:left;font-size:13px;color:#b8a77a;margin-top:10px}
+/* ---- Pantalla de llamada: todo negro con el orbe en el centro ---- */
+#call{position:fixed;inset:0;background:#000;z-index:99;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:env(safe-area-inset-top) 20px env(safe-area-inset-bottom)}
+#call[hidden]{display:none}
+#call .orb{height:230px;width:230px;margin:0;font-size:0;transition:transform .3s}
+#call.listening .orb{border-color:#ffd978;animation:listen 1.4s infinite alternate}
+#call.thinking .orb{animation:spin 1.2s linear infinite;border-style:dashed}
+#call.speaking .orb{animation:speak .45s infinite alternate}
+@keyframes listen{to{transform:scale(1.07);box-shadow:0 0 70px #ffd978,inset 0 0 60px #ffe6a3}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes speak{to{transform:scale(1.12);box-shadow:0 0 90px #ffb703,inset 0 0 70px #ff8f1f}}
+#cstate{margin-top:34px;color:#f5c451;letter-spacing:.2em;font-size:14px}
+#ctext{margin:12px 0 0;color:#b8a77a;font-size:15px;min-height:44px;max-width:480px;text-align:center}
+#clink{margin-top:10px;color:#f5c451;font-size:15px}
+#hang{color:#fff;position:absolute;bottom:calc(36px + env(safe-area-inset-bottom));width:74px;height:74px;border-radius:50%;background:#e5334b;font-size:30px;padding:0;border:0}
+@media (prefers-reduced-motion:reduce){*{animation:none!important}}
+</style></head><body>
+<main>
+<h1>JARVIS</h1>
+<div id="orb" class="orb">◉</div>
+<p id="status">Sistema preparado</p>
+<section class="card"><button id="callbtn">📞 Llamar a JARVIS</button>
+<p class="small">Habla y JARVIS te escucha y te responde en voz alta, sin tocar nada más. Di «cuelga» o «adiós» para terminar.</p>
+<label>Voz<select id="voice"></select></label>
+<label>Velocidad de habla<input type="range" id="rate" min="0.85" max="1.25" step="0.05" value="1"></label></section>
+<section class="card"><p><strong>O di «Jarvis» y después tu orden</strong></p><button id="activate">Activar escucha (requiere un toque)</button>
+<p class="small">En iPhone el micrófono necesita permiso y no funciona con la pantalla bloqueada ni en segundo plano.</p></section>
+<section class="card"><div id="log">JARVIS: A sus órdenes. Prueba «Jarvis, abre YouTube».</div>
+<form id="form"><input id="cmd" placeholder="Jarvis, abre Spotify" aria-label="Comando"><button>Enviar</button></form></section>
+<section class="card"><div class="links">
+<a href="https://open.spotify.com/">Spotify</a><a href="https://youtube.com/">YouTube</a><a href="https://wa.me/">WhatsApp</a>
+<a href="https://tiktok.com/">TikTok</a><a href="https://instagram.com/">Instagram</a><a href="https://discord.com/app">Discord</a>
+<a href="https://chatgpt.com/">ChatGPT</a></div></section>
+<p class="small">Prototipo de comandos: todavía no incluye una IA online. Los enlaces pueden abrir Safari o las aplicaciones según iOS.</p>
+</main>
+
+<div id="call" hidden>
+ <div class="orb"></div>
+ <div id="cstate">CONECTANDO</div>
+ <p id="ctext"></p>
+ <a id="clink" target="_blank" rel="noopener" hidden></a>
+ <button id="hang" aria-label="Colgar">✕</button>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+const norm=s=>s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+const APPS={spotify:['Spotify','https://open.spotify.com/'],youtube:['YouTube','https://youtube.com/'],whatsapp:['WhatsApp','https://wa.me/'],tiktok:['TikTok','https://tiktok.com/'],instagram:['Instagram','https://instagram.com/'],discord:['Discord','https://discord.com/app'],chatgpt:['ChatGPT','https://chatgpt.com/']};
+const ls={get:(k,d)=>{try{return localStorage.getItem(k)??d}catch{return d}},set:(k,v)=>{try{localStorage.setItem(k,v)}catch{}}};
+
+/* ---------- Voz: elige la mejor voz en español y habla por frases ---------- */
+let voices=[];
+function loadVoices(){
+  voices=speechSynthesis.getVoices().filter(v=>v.lang.replace('_','-').toLowerCase().startsWith('es'));
+  // Mejores primero: premium/mejorada, luego es-ES, luego el resto
+  const score=v=>(/premium|enhanced|mejorada/i.test(v.name)?4:0)+(v.lang.replace('_','-')==='es-ES'?2:0)+(/jorge|m[oó]nica/i.test(v.name)?1:0);
+  voices.sort((a,b)=>score(b)-score(a));
+  const saved=ls.get('voice','');
+  $('voice').innerHTML=voices.map(v=>`<option ${v.name===saved?'selected':''}>${v.name}</option>`).join('')||'<option>Voz del sistema</option>';
+}
+if('speechSynthesis'in window){loadVoices();speechSynthesis.onvoiceschanged=loadVoices}
+$('voice').onchange=e=>ls.set('voice',e.target.value);
+$('rate').value=ls.get('rate','1');$('rate').onchange=e=>ls.set('rate',e.target.value);
+let cancelSay=false;
+function speakChunk(t){return new Promise(res=>{
+  const u=new SpeechSynthesisUtterance(t);u.lang='es-ES';
+  u.voice=voices.find(v=>v.name===ls.get('voice',''))||voices[0]||null;
+  u.rate=Number(ls.get('rate','1'));u.pitch=1;u.onend=u.onerror=()=>res();
+  speechSynthesis.speak(u);
+  // Salvaguarda: iOS a veces no dispara onend
+  setTimeout(res,Math.max(4000,t.length*120));
+})}
+async function say(text){
+  if(!('speechSynthesis'in window))return;
+  cancelSay=false;speechSynthesis.cancel();
+  // Frases cortas con pausa natural: evita cortes de iOS y mejora el ritmo
+  for(const s of (text.match(/[^.!?:]+[.!?:]*/g)||[text]).map(x=>x.trim()).filter(Boolean)){
+    if(cancelSay)return;await speakChunk(s);
+    if(cancelSay)return;await new Promise(r=>setTimeout(r,160));
+  }
+}
+
+/* ---------- Cerebro de comandos ---------- */
+const WMO=c=>c===0?'despejado':c<4?'con nubes':c<50?'con niebla':c<70?'con lluvia':c<80?'con nieve':'con chubascos';
+async function weather(city){
+  let lat,lon,name=city;
+  if(city){const g=await(await fetch('https://geocoding-api.open-meteo.com/v1/search?count=1&language=es&name='+encodeURIComponent(city))).json();
+    if(!g.results)return 'No encuentro esa ciudad.';({latitude:lat,longitude:lon,name}=g.results[0])}
+  else{const p=await new Promise((ok,ko)=>navigator.geolocation?navigator.geolocation.getCurrentPosition(ok,ko,{timeout:8000}):ko());lat=p.coords.latitude;lon=p.coords.longitude;name='tu ubicación'}
+  const w=await(await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code&daily=precipitation_probability_max&timezone=auto&forecast_days=2`)).json();
+  return `En ${name} hay ${Math.round(w.current.temperature_2m)} grados, ${WMO(w.current.weather_code)}. Probabilidad de lluvia hoy, ${w.daily.precipitation_probability_max[0]} por ciento; mañana, ${w.daily.precipitation_probability_max[1]}.`;
+}
+async function respond(q){ // q ya normalizado y sin "jarvis"
+  if(!q)return{text:'Dime.'};
+  for(const k in APPS)if(q.includes(k)||(k==='spotify'&&q.includes('musica')))return{text:'Abriendo '+APPS[k][0]+'. Toca el enlace.',url:APPS[k][1],label:'Abrir '+APPS[k][0]};
+  if(/\bhora\b/.test(q))return{text:'Son las '+new Intl.DateTimeFormat('es-ES',{hour:'2-digit',minute:'2-digit'}).format(new Date())};
+  if(/fecha|que dia/.test(q))return{text:'Hoy es '+new Intl.DateTimeFormat('es-ES',{dateStyle:'full'}).format(new Date())};
+  if(/tiempo|clima|llover|temperatura/.test(q)){
+    const m=q.match(/ en (.+)$/);
+    try{return{text:await weather(m&&m[1].trim())}}catch{return{text:'No he podido consultar el tiempo. Prueba diciendo el nombre de una ciudad.'}}}
+  if(/^(busca|buscar|buscame)/.test(q)){const t=q.replace(/^(busca|buscar|buscame)\s*(informacion\s*)?(sobre|de)?\s*/,'');return{text:'Buscando '+t+'. Toca el enlace.',url:'https://www.google.com/search?q='+encodeURIComponent(t),label:'Ver resultados de «'+t+'»'}}
+  if(/hola|buenas|buenos dias|buenas tardes|buenas noches/.test(q))return{text:'Hola. ¿En qué puedo ayudarte?'};
+  if(/como estas|que tal/.test(q))return{text:'Todo en orden por aquí. ¿Y tú qué tal?'};
+  if(/gracias/.test(q))return{text:'De nada. Para eso estoy.'};
+  return{text:'No conozco esa orden todavía. Prueba con abrir una aplicación, la hora o el tiempo.'};
+}
+
+/* ---------- Pantalla principal (palabra «Jarvis» + texto) ---------- */
+let recognition=null,enabled=false;
+function log(t){$('log').textContent=t}
+async function run(text){
+  const n=norm(text),i=n.indexOf('jarvis');
+  if(i<0){log('JARVIS: Di mi nombre antes de la orden.');return}
+  const r=await respond(n.slice(i+6).replace(/^[,.:;\s]+/,''));
+  log('Tú: '+text+'\nJARVIS: '+r.text);
+  if(r.url){const a=document.createElement('a');a.href=r.url;a.textContent=r.label||'Toca aquí para abrir';a.style.color='#f5c451';a.target='_blank';a.rel='noopener';$('log').append(document.createElement('br'),a)}
+  say(r.text);
+}
+$('form').onsubmit=e=>{e.preventDefault();const t=$('cmd').value.trim();if(t){run(t);$('cmd').value=''}};
+function stopWake(msg){enabled=false;try{recognition&&recognition.stop()}catch{}$('activate').textContent='Activar escucha (requiere un toque)';$('orb').classList.remove('active');if(msg)$('status').textContent=msg}
+$('activate').onclick=()=>{
+  if(enabled)return stopWake('Escucha detenida');
+  if(!SR){log('El reconocimiento de voz no está disponible en este navegador. Usa el campo de texto.');return}
+  recognition=new SR();recognition.lang='es-ES';recognition.continuous=true;recognition.interimResults=false;
+  recognition.onresult=e=>{for(let i=e.resultIndex;i<e.results.length;i++)if(e.results[i].isFinal)run(e.results[i][0].transcript)};
+  recognition.onerror=e=>{log('Error de micrófono: '+e.error+'. Comprueba los permisos de Safari.');if(/not-allowed|service-not-allowed/.test(e.error))stopWake()};
+  recognition.onend=()=>stopWake('Escucha detenida por iOS o el navegador');
+  try{recognition.start();enabled=true;$('status').textContent='Escuchando: di «Jarvis»';$('orb').classList.add('active');$('activate').textContent='Detener escucha'}catch{log('No se pudo iniciar el reconocimiento. Prueba a recargar la página.')}
+};
+
+/* ---------- LLAMADA voz a voz ---------- */
+let inCall=false,crec=null,handling=false,wake=null,errs=0;
+const BYE=/\b(cuelga|colgar|adios|hasta luego|terminar llamada|nada mas)\b/;
+function cstate(cls,txt){$('call').className=cls;$('cstate').textContent=txt}
+async function startCall(){
+  if(!SR){log('Tu navegador no permite reconocimiento de voz, así que no puedo hacer la llamada. Usa Safari actualizado con el dictado activado.');return}
+  if(enabled)stopWake();
+  inCall=true;errs=0;$('call').hidden=false;$('ctext').textContent='';$('clink').hidden=true;
+  try{wake=await navigator.wakeLock?.request('screen')}catch{}
+  cstate('speaking','HABLANDO');await say('Dime.');
+  if(inCall)listen();
+}
+function endCall(msg){
+  inCall=false;handling=false;cancelSay=true;try{crec&&crec.abort()}catch{}
+  try{speechSynthesis.cancel()}catch{}try{wake&&wake.release()}catch{}
+  $('call').hidden=true;if(msg)$('status').textContent=msg;
+}
+function listen(){
+  if(!inCall||handling)return;
+  cstate('listening','TE ESCUCHO');
+  crec=new SR();crec.lang='es-ES';crec.continuous=false;crec.interimResults=true;
+  let got=false;
+  crec.onresult=e=>{const r=e.results[e.results.length-1];$('ctext').textContent=r[0].transcript;if(r.isFinal&&!got){got=true;errs=0;handle(r[0].transcript)}};
+  crec.onerror=e=>{
+    if(/not-allowed|service-not-allowed/.test(e.error)){endCall('Micrófono bloqueado: permítelo en Ajustes > Safari.');return}
+    if(e.error!=='no-speech'&&e.error!=='aborted'&&++errs>4){endCall('La llamada se cortó por errores de reconocimiento.')}
+  };
+  crec.onend=()=>{if(inCall&&!handling&&!got)setTimeout(listen,350)}; // sigue escuchando si hubo silencio
+  try{crec.start()}catch{setTimeout(listen,600)}
+}
+async function handle(text){
+  handling=true;cstate('thinking','PENSANDO');$('clink').hidden=true;
+  try{crec.stop()}catch{} // el micro se cierra mientras habla JARVIS, para no oírse a sí mismo
+  const n=norm(text).replace(/^(oye )?jarvis[,.\s]*/,'');
+  if(BYE.test(n)){cstate('speaking','HABLANDO');await say('Hasta luego. Aquí estaré.');endCall('Llamada terminada');return}
+  const r=await respond(n);if(!inCall)return;
+  $('ctext').textContent=r.text;
+  if(r.url){$('clink').href=r.url;$('clink').textContent=r.label||'Abrir';$('clink').hidden=false}
+  cstate('speaking','HABLANDO');await say(r.text);
+  if(!inCall)return;
+  await new Promise(r=>setTimeout(r,350));handling=false;listen();
+}
+$('callbtn').onclick=startCall;$('hang').onclick=()=>endCall('Llamada terminada');
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&inCall)endCall('Llamada terminada al salir de la app')});
+
+if('serviceWorker'in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('./sw.js').catch(()=>{});
+</script></body></html>

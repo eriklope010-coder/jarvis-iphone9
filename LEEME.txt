@@ -1,0 +1,16 @@
+JARVIS v4
+Reemplaza index.html, manifest.webmanifest y sw.js (y añade los 3 PNG) en la raíz de tu repositorio de GitHub y confirma los cambios. Espera a que GitHub Pages termine de publicar. En el iPhone cierra la web app y vuelve a abrirla (si ves la versión anterior, borra los datos del sitio en Ajustes > Safari).
+
+Novedades v4:
+- Diseño nuevo: fondo negro y dorado.
+- Icono propio para la pantalla de inicio (sube también apple-touch-icon.png, icon-192.png e icon-512.png).
+- IMPORTANTE: si ya tenías JARVIS en la pantalla de inicio, bórrala y vuelve a añadirla desde Safari (Compartir > Añadir a pantalla de inicio) para que iOS coja el icono nuevo.
+
+Novedades v3:
+- Botón «Llamar a JARVIS»: conversación voz a voz. Pantalla negra con el orbe en el centro. Te escucha, responde en voz alta y vuelve a escucharte solo. Di «cuelga» o «adiós», o pulsa el botón rojo.
+- Voz más natural: elige la mejor voz en español disponible, lee por frases con pausas y puedes cambiar voz y velocidad.
+- Discord añadido a los accesos.
+- El tiempo ahora se responde en voz (Open-Meteo, sin clave).
+
+Limites (iOS): la llamada solo funciona con la app abierta y la pantalla encendida. Si sales de la app, la llamada se corta. Los enlaces se abren tocándolos, iOS bloquea abrirlos solo. Todavía no incluye IA online: responde a comandos (apps, búsquedas, hora, fecha, tiempo, saludos).
+Para voces mejores: Ajustes > Accesibilidad > Contenido hablado > Voces > Español, y descarga una voz «Mejorada» o «Premium».
